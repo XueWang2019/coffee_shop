@@ -70,25 +70,31 @@ def get_drink_detail(payload):
     returns status code 200 and json {"success": True, "drinks": drink} where drink an array containing only the newly created drink
         or appropriate status code indicating reason for failure
 '''
-@app.route('/drinks', methods=['POST'])
-@requires_auth("post:drinks")
-def create_drink(payload):
-    req = request.get_json()
+
+
+
+
+@app.route('/drinks', methods=['POST'], endpoint='post_drink')
+@requires_auth('post:drinks')
+def drinks(f):
+    """
+     post:drinks permission
+     This API creates a new drink and returns its long description
+     Return the created drink info or the error handler
+     """
+
+    data = dict(request.form or request.json or request.data)
+    drink = Drink(title=data.get('title'),
+                  recipe=data.get('recipe') if type(data.get('recipe')) == str
+                  else json.dumps(data.get('recipe')))
     try:
-        req_recipe = req['recipe']
-        req_recipe = json.loads(req_recipe)
-        if isinstance(req_recipe, dict):
-            req_recipe = [req_recipe]
-        drink = Drink()
-        drink.title = req['title']
-        drink.recipe = json.dumps(req_recipe)
         drink.insert()
-
-    except Exception as e:
-        print(e)
-    
-
-    return jsonify({'success': True, 'drinks': [drink.long()]})
+        return json.dumps({'success': True, 'drink': drink.long()}), 200
+    except:
+        return json.dumps({
+            'success': False,
+            'error': "An error occurred"
+        }), 500
 
 '''
 @TODO implement endpoint
