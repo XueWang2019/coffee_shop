@@ -1,0 +1,1 @@
+https://coffeeshopxw.eu.auth0.com/authorize?audience=http://localhost:5000&scope=udacitybarista@udacity.com&response_type=token&client_id=yx3co8sqj3uWJNNe1N6OxWLT7dY4ZqlF&redirect_uri=http://localhost:8100/tabs/user-page

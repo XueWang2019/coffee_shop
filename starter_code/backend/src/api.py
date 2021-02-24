@@ -31,18 +31,15 @@ db_drop_and_create_all()
 @app.route('/drinks', methods=['GET'])
 def get_drinks():
     try:
-        print(0)
-        return json.dumps({
-            'success': True,
-            'drinks': [drink.short() for drink in Drink.query.all()]
-            }), 200
-        print(1)
-    except:
-        print("Unexpected error:", sys.exc_info()[0])
-        return json.dumps({
-            'success': False,
-            'error': "An error occurred"
-        }), 500
+        drinks = Drink.query.all()
+        if len(drinks) == 0:
+            abort(404)  # Not found - when there are no drink
+        else:
+            result = [drink.short() for drink in drinks]
+            return jsonify({'success': True, 'drinks': result})
+    except AuthError:
+        abort(422)
+
 
 '''
 @TODO implement endpoint
@@ -54,12 +51,17 @@ def get_drinks():
 '''
 @app.route('/drinks-detail', methods=['GET'])
 @requires_auth('get:drinks-detail')
+
 def get_drink_detail(payload):
+
     drinks = Drink.query.all()
-    return jsonify({
-        'success': True,
-        'drinks': [drink.long() for drink in drinks]
-    }), 200
+    if len(drinks) == 0:
+        abort(404)  # Not found - when there are no drink
+    else:
+        result = [drink.long() for drink in drinks]
+        return jsonify({'success': True, 'drinks': result})
+
+
 
 
 '''
@@ -123,8 +125,10 @@ def update_drink(payload, id):
         if req_recipe:
             drink.recipe = json.dumps(req['recipe'])
         drink.update()
-    except BaseException:
-        abort(400)
+    except Exception as e:
+        print(e)
+        abort(401)
+
 
     return jsonify({'success': True, 'drinks': [drink.long()]}), 200
 
@@ -147,8 +151,9 @@ def delete_drink(payload, id):
         abort(404)
     try:
         drink.delete()
-    except BaseException:
-        abort(400)
+    except Exception as e:
+        print(e)
+        abort(401)
     return jsonify({'success': True, 'delete': id}), 200
 
 ## Error Handling
@@ -210,8 +215,26 @@ def internal_server_error(error):
     error handler should conform to general task above 
 '''
 
+@app.errorhandler(404)
+def unprocessable(error):
+    """
+     Propagates the formatted 404 error to the response
+     """
+    return jsonify({
+        "success": False,
+        "error": 404,
+        "message": "resource not found"
+    }), 404
 
 '''
 @TODO implement error handler for AuthError
     error handler should conform to general task above 
 '''
+@app.errorhandler(AuthError)
+def handle_auth_error(ex):
+    """
+    Receive the raised authorization error and propagates it as response
+    """
+    response = jsonify(ex.error)
+    response.status_code = ex.status_code
+    return response
